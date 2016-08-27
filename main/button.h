@@ -16,7 +16,7 @@ struct Button
     _onPress = onPress;
     
     pinMode(_buttonPin, INPUT);  // Set the button as an input
-    digitalWrite(_buttonPin, HIGH);
+    digitalWrite(_buttonPin, HIGH); // Enable pullup resistor
   }
 
   void Loop()
