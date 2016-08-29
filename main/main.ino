@@ -16,15 +16,35 @@ Button _button;
 const int kPedalCount = 2;
 uint8_t _pedals[kPedalCount];
 
+Joystick_ _joystick(
+  JOYSTICK_DEFAULT_REPORT_ID, // HID report ID
+  2,      // Button Count
+  0,      // Hat switch count
+  false,  // X-Axis
+  false,  // Y-Axis
+  false,  // Z-Axis
+  false,  // X-Rot
+  false,  // Y-Rot
+  false,  // Z-Rot
+  false,  // Rudder
+  false,  // Throttle
+  true,   // Accelerator
+  true,   // Brake
+  true);  // Steering
+
 void OnModeButtonPressed();
 
 
 void setup()
 {
-  Joystick.begin(false);
+  _joystick.setSteeringRange(-63, 63);
+  _joystick.setBrakeRange(0, 63);
+  _joystick.setAcceleratorRange(0, 63);
+
+  _joystick.begin(false);
 
   _button.Setup(kModeButtonPin, OnModeButtonPressed);
-  
+
   pinMode(kModeLedPin, OUTPUT);
 
   pinMode(kLeftButtonPin, INPUT);
@@ -40,8 +60,6 @@ void loop()
 {
   _button.Loop();
 
-  Joystick.setButton(0, !_button._buttonState);
-
   int pedalRight = ReadPedal(_pedals[1]);
   int pedalLeft = ReadPedal(_pedals[0]);
 
@@ -54,10 +72,10 @@ void loop()
     sendJoystickIndividualAxis(pedalLeft, pedalRight);
   }
 
-  Joystick.setButton(0, digitalRead(kRightButtonPin));
-  Joystick.setButton(1, digitalRead(kLeftButtonPin));
+  _joystick.setButton(0, digitalRead(kRightButtonPin));
+  _joystick.setButton(1, digitalRead(kLeftButtonPin));
 
-  Joystick.sendState();
+  _joystick.sendState();
 }
 
 void OnModeButtonPressed()
@@ -68,25 +86,25 @@ void OnModeButtonPressed()
 
 void sendJoystickRudder(int pedalLeft, int pedalRight)
 {
-  uint8_t pedalsCombined = pedalRight - pedalLeft;
-  Joystick.setXAxis(scalePedalOutput(pedalsCombined, 128));
+  int pedalsCombined = pedalRight - pedalLeft;
+  _joystick.setSteering(pedalsCombined);
 
-  Joystick.setThrottle(scalePedalOutput(pedalLeft, 0));
-  Joystick.setRudder(0);
+  Serial.println(pedalsCombined);
+
+  _joystick.setAccelerator(0);
+  _joystick.setBrake(0);
 }
 
 void sendJoystickIndividualAxis(int pedalLeft, int pedalRight)
 {
-  Joystick.setThrottle(scalePedalOutput(pedalLeft, 255));
-  Joystick.setRudder(scalePedalOutput(pedalRight, 255));
+  _joystick.setAccelerator(pedalRight);
+  _joystick.setBrake(pedalLeft);
 
-  Joystick.setXAxis(0);
+  Serial.print(pedalLeft);
+  Serial.print(",");
+  Serial.println(pedalRight);
+
+  _joystick.setSteering(0);
 }
 
-uint8_t scalePedalOutput(int pedal, int max)
-{
-  uint8_t output = ((float)pedal / kPedalMax) * max;
-  // Serial.println(output);
-  return output;
-}
 
